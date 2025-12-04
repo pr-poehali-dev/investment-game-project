@@ -18,9 +18,15 @@ interface User {
 
 interface HistoryItem {
   id: string;
-  type: 'invest' | 'win' | 'withdraw' | 'deposit';
+  type: 'invest' | 'win' | 'withdraw' | 'deposit' | 'commission';
   amount: number;
   date: string;
+}
+
+interface AdminData {
+  balance: number;
+  totalEarned: number;
+  history: HistoryItem[];
 }
 
 interface DepositMethod {
@@ -32,8 +38,12 @@ interface DepositMethod {
   processingTime: string;
 }
 
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'admin2024';
+
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(true);
   const [currentParticipant, setCurrentParticipant] = useState(1);
   const [user, setUser] = useState<User>({
@@ -41,6 +51,11 @@ const Index = () => {
     balance: 0,
     totalInvested: 0,
     totalWon: 0,
+    history: []
+  });
+  const [adminData, setAdminData] = useState<AdminData>({
+    balance: 0,
+    totalEarned: 0,
     history: []
   });
   
@@ -151,6 +166,21 @@ const Index = () => {
       return;
     }
 
+    if (authForm.username === ADMIN_USERNAME && authForm.password === ADMIN_PASSWORD) {
+      setIsAdmin(true);
+      setIsAuthenticated(true);
+      setShowAuthDialog(false);
+      toast.success('Добро пожаловать, Администратор!', {
+        description: 'Вы вошли в панель управления'
+      });
+      return;
+    }
+
+    if (authForm.username === ADMIN_USERNAME && authForm.password !== ADMIN_PASSWORD) {
+      toast.error('Доступ запрещён! Неверный пароль администратора');
+      return;
+    }
+
     setUser({
       username: authForm.username,
       balance: isRegister ? 100 : 500,
@@ -160,6 +190,7 @@ const Index = () => {
     });
     
     setIsAuthenticated(true);
+    setIsAdmin(false);
     setShowAuthDialog(false);
     toast.success(`Добро пожаловать, ${authForm.username}!`);
   };
@@ -172,6 +203,21 @@ const Index = () => {
 
     const newBalance = user.balance - 50;
     const newParticipant = currentParticipant + 1;
+    
+    const adminCommission = 50 * 0.07;
+    const adminHistoryItem: HistoryItem = {
+      id: Date.now().toString() + '-admin',
+      type: 'commission',
+      amount: adminCommission,
+      date: new Date().toLocaleString('ru-RU')
+    };
+
+    setAdminData({
+      ...adminData,
+      balance: adminData.balance + adminCommission,
+      totalEarned: adminData.totalEarned + adminCommission,
+      history: [adminHistoryItem, ...adminData.history]
+    });
     
     if (newParticipant === 15) {
       const prize = winAmount;
@@ -350,6 +396,104 @@ const Index = () => {
           </Tabs>
         </DialogContent>
       </Dialog>
+    );
+  }
+
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-primary/20 to-secondary/20 opacity-50" />
+        
+        <div className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
+          <header className="mb-8 animate-slide-up">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <Icon name="Shield" size={40} className="text-accent" />
+                <div>
+                  <h1 className="text-4xl md:text-5xl font-extrabold gradient-text">Админ-панель</h1>
+                  <p className="text-sm text-muted-foreground">Управление системой InvestWin</p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => {
+                  setIsAuthenticated(false);
+                  setIsAdmin(false);
+                  setShowAuthDialog(true);
+                }}
+              >
+                <Icon name="LogOut" size={20} />
+              </Button>
+            </div>
+          </header>
+
+          <div className="grid gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <Card className="glass-effect border-accent/30 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="Wallet" size={28} className="text-accent" />
+                <h2 className="text-2xl font-bold">Баланс администратора</h2>
+              </div>
+              <div className="text-6xl font-extrabold gradient-text mb-4">
+                {adminData.balance.toFixed(2)}₽
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                  <div className="text-sm text-muted-foreground mb-1">Всего заработано</div>
+                  <div className="text-3xl font-bold text-accent">{adminData.totalEarned.toFixed(2)}₽</div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="glass-effect border-accent/30 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="TrendingUp" size={24} className="text-primary" />
+                <h2 className="text-xl font-bold">Статистика комиссий</h2>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between p-3 rounded-lg bg-muted/20">
+                  <span className="text-muted-foreground">Комиссия с каждой инвестиции:</span>
+                  <span className="font-bold text-accent">7% (3.50₽)</span>
+                </div>
+                <div className="flex justify-between p-3 rounded-lg bg-muted/20">
+                  <span className="text-muted-foreground">Всего транзакций:</span>
+                  <span className="font-bold text-primary">{adminData.history.length}</span>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="glass-effect border-accent/30 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Icon name="History" size={24} className="text-primary" />
+                <h2 className="text-xl font-bold">История комиссий</h2>
+              </div>
+              
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {adminData.history.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    История пуста. Комиссии будут отображаться здесь.
+                  </p>
+                ) : (
+                  adminData.history.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Icon name="DollarSign" size={20} className="text-accent" />
+                        <div>
+                          <div className="font-semibold">Комиссия 7%</div>
+                          <div className="text-xs text-muted-foreground">{item.date}</div>
+                        </div>
+                      </div>
+                      <div className="font-bold text-lg text-accent">
+                        +{item.amount.toFixed(2)}₽
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
     );
   }
 
