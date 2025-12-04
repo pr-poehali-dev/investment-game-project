@@ -420,32 +420,19 @@ const Index = () => {
 
           <Card className="glass-effect border-primary/20 p-6">
             <div className="text-center mb-6">
-              <div className="text-sm text-muted-foreground mb-2">
-                До выигрыша осталось участников:
+              <div className="text-sm text-muted-foreground mb-3">
+                Инвестируй и получай шанс выиграть!
               </div>
-              <div className="text-6xl font-extrabold gradient-text mb-1">
-                {15 - currentParticipant}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Текущий фонд: <span className="text-accent font-semibold">{totalPool}₽</span> • 
-                Выигрыш: <span className="text-primary font-semibold">{winAmount.toFixed(2)}₽</span>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <div className="h-3 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full gradient-purple transition-all duration-500 ease-out relative overflow-hidden"
-                  style={{ width: `${progressPercent}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" 
-                       style={{ backgroundSize: '200% 100%' }} 
-                  />
+              <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 border border-primary/20">
+                <div className="text-sm text-muted-foreground mb-1">Текущий фонд</div>
+                <div className="text-4xl font-extrabold gradient-text mb-2">{totalPool}₽</div>
+                <div className="text-sm">
+                  Выигрыш каждого 15-го: <span className="text-primary font-bold text-lg">{winAmount.toFixed(2)}₽</span>
                 </div>
               </div>
-              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>Участник {currentParticipant}</span>
-                <span>15 участников</span>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Icon name="Sparkles" size={16} className="text-primary" />
+                <span>Следующий выигрыш может быть твоим!</span>
               </div>
             </div>
 
