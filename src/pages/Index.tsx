@@ -18,9 +18,18 @@ interface User {
 
 interface HistoryItem {
   id: string;
-  type: 'invest' | 'win' | 'withdraw';
+  type: 'invest' | 'win' | 'withdraw' | 'deposit';
   amount: number;
   date: string;
+}
+
+interface DepositMethod {
+  id: string;
+  title: string;
+  icon: string;
+  description: string;
+  steps: string[];
+  processingTime: string;
 }
 
 const Index = () => {
@@ -42,6 +51,95 @@ const Index = () => {
 
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [showDepositDialog, setShowDepositDialog] = useState(false);
+  const [selectedDepositMethod, setSelectedDepositMethod] = useState<DepositMethod | null>(null);
+  const [depositAmount, setDepositAmount] = useState('');
+
+  const depositMethods: DepositMethod[] = [
+    {
+      id: 'card',
+      title: 'Банковская карта',
+      icon: 'CreditCard',
+      description: 'Пополнение через Visa/MasterCard/Мир',
+      steps: [
+        'Введите сумму пополнения',
+        'Нажмите "Продолжить"',
+        'Введите данные банковской карты',
+        'Подтвердите платёж через SMS',
+        'Средства зачислятся мгновенно'
+      ],
+      processingTime: 'Мгновенно'
+    },
+    {
+      id: 'sbp',
+      title: 'СБП (Система быстрых платежей)',
+      icon: 'Smartphone',
+      description: 'Быстрый перевод через мобильный банк',
+      steps: [
+        'Введите сумму пополнения',
+        'Скопируйте номер телефона получателя',
+        'Откройте приложение вашего банка',
+        'Переведите деньги по номеру телефона через СБП',
+        'Средства зачислятся в течение 1-2 минут'
+      ],
+      processingTime: '1-2 минуты'
+    },
+    {
+      id: 'qiwi',
+      title: 'QIWI Кошелёк',
+      icon: 'Wallet',
+      description: 'Пополнение через QIWI',
+      steps: [
+        'Введите сумму пополнения',
+        'Войдите в свой QIWI Кошелёк',
+        'Переведите средства на указанный номер',
+        'Подтвердите платёж',
+        'Средства зачислятся в течение 5 минут'
+      ],
+      processingTime: 'До 5 минут'
+    },
+    {
+      id: 'crypto',
+      title: 'Криптовалюта',
+      icon: 'Bitcoin',
+      description: 'Пополнение через USDT/BTC/ETH',
+      steps: [
+        'Выберите криптовалюту (USDT, BTC, ETH)',
+        'Введите сумму пополнения',
+        'Скопируйте адрес кошелька',
+        'Отправьте криптовалюту с вашего кошелька',
+        'Средства зачислятся после 3 подтверждений в сети'
+      ],
+      processingTime: '10-30 минут'
+    },
+    {
+      id: 'yoomoney',
+      title: 'ЮMoney',
+      icon: 'Coins',
+      description: 'Пополнение через ЮMoney (бывший Яндекс.Деньги)',
+      steps: [
+        'Введите сумму пополнения',
+        'Войдите в ЮMoney',
+        'Переведите средства на указанный счёт',
+        'Подтвердите операцию',
+        'Средства зачислятся в течение 5 минут'
+      ],
+      processingTime: 'До 5 минут'
+    },
+    {
+      id: 'promo',
+      title: 'Промокод',
+      icon: 'Gift',
+      description: 'Активация промокода для получения бонуса',
+      steps: [
+        'Введите промокод в специальное поле',
+        'Нажмите "Активировать"',
+        'Бонус будет начислен на ваш баланс мгновенно',
+        'Проверьте баланс после активации'
+      ],
+      processingTime: 'Мгновенно'
+    }
+  ];
 
   const totalPool = currentParticipant * 50;
   const winAmount = totalPool * 0.07;
@@ -146,6 +244,35 @@ const Index = () => {
     toast.success(`Заявка на вывод ${amount}₽ создана!`);
     setShowWithdrawDialog(false);
     setWithdrawAmount('');
+  };
+
+  const handleDeposit = () => {
+    const amount = parseFloat(depositAmount);
+    
+    if (!amount || amount <= 0) {
+      toast.error('Укажите корректную сумму');
+      return;
+    }
+
+    const historyItem: HistoryItem = {
+      id: Date.now().toString(),
+      type: 'deposit',
+      amount: amount,
+      date: new Date().toLocaleString('ru-RU')
+    };
+
+    setUser({
+      ...user,
+      balance: user.balance + amount,
+      history: [historyItem, ...user.history]
+    });
+
+    toast.success(`Баланс пополнен на ${amount}₽!`, {
+      description: `Способ: ${selectedDepositMethod?.title}`
+    });
+    
+    setSelectedDepositMethod(null);
+    setDepositAmount('');
   };
 
   if (!isAuthenticated) {
@@ -255,15 +382,26 @@ const Index = () => {
                 <Icon name="Wallet" size={24} className="text-primary" />
                 <span className="text-sm text-muted-foreground">Баланс</span>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowWithdrawDialog(true)}
-                className="border-primary/30"
-              >
-                <Icon name="ArrowUpRight" size={16} className="mr-1" />
-                Вывести
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDepositDialog(true)}
+                  className="border-primary/30"
+                >
+                  <Icon name="Plus" size={16} className="mr-1" />
+                  Пополнить
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowWithdrawDialog(true)}
+                  className="border-primary/30"
+                >
+                  <Icon name="ArrowUpRight" size={16} className="mr-1" />
+                  Вывести
+                </Button>
+              </div>
             </div>
             <div className="text-5xl font-bold gradient-text mb-2">
               {user.balance.toFixed(2)}₽
@@ -345,17 +483,19 @@ const Index = () => {
                       {item.type === 'invest' && <Icon name="ArrowDown" size={20} className="text-muted-foreground" />}
                       {item.type === 'win' && <Icon name="Trophy" size={20} className="text-primary" />}
                       {item.type === 'withdraw' && <Icon name="ArrowUpRight" size={20} className="text-accent" />}
+                      {item.type === 'deposit' && <Icon name="Plus" size={20} className="text-secondary" />}
                       <div>
                         <div className="font-semibold">
                           {item.type === 'invest' && 'Инвестиция'}
                           {item.type === 'win' && '🎉 Выигрыш'}
                           {item.type === 'withdraw' && 'Вывод средств'}
+                          {item.type === 'deposit' && 'Пополнение'}
                         </div>
                         <div className="text-xs text-muted-foreground">{item.date}</div>
                       </div>
                     </div>
-                    <div className={`font-bold text-lg ${item.type === 'win' ? 'text-primary' : item.type === 'withdraw' ? 'text-accent' : 'text-muted-foreground'}`}>
-                      {item.type === 'invest' ? '-' : '+'}{item.amount.toFixed(2)}₽
+                    <div className={`font-bold text-lg ${item.type === 'win' ? 'text-primary' : item.type === 'withdraw' ? 'text-accent' : item.type === 'deposit' ? 'text-secondary' : 'text-muted-foreground'}`}>
+                      {item.type === 'invest' || item.type === 'withdraw' ? '-' : '+'}{item.amount.toFixed(2)}₽
                     </div>
                   </div>
                 ))
@@ -402,6 +542,112 @@ const Index = () => {
               Подтвердить вывод
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
+        <DialogContent className="glass-effect border-primary/20 max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="gradient-text text-2xl">Пополнение баланса</DialogTitle>
+            <DialogDescription>
+              Выберите удобный способ пополнения фондового баланса
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!selectedDepositMethod ? (
+            <div className="grid gap-3 mt-2">
+              {depositMethods.map((method) => (
+                <button
+                  key={method.id}
+                  onClick={() => setSelectedDepositMethod(method)}
+                  className="text-left p-4 rounded-xl glass-effect border border-primary/10 hover:border-primary/40 transition-all hover:scale-[1.02] group"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                      <Icon name={method.icon} size={24} className="text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg mb-1 group-hover:gradient-text transition-all">{method.title}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">{method.description}</p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <Icon name="Clock" size={14} className="text-accent" />
+                        <span className="text-accent font-semibold">{method.processingTime}</span>
+                      </div>
+                    </div>
+                    <Icon name="ChevronRight" size={20} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 mt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedDepositMethod(null)}
+                className="mb-2"
+              >
+                <Icon name="ArrowLeft" size={16} className="mr-2" />
+                Назад к способам
+              </Button>
+
+              <Card className="glass-effect border-primary/20 p-4">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <Icon name={selectedDepositMethod.icon} size={28} className="text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl gradient-text">{selectedDepositMethod.title}</h3>
+                    <p className="text-sm text-muted-foreground">{selectedDepositMethod.description}</p>
+                    <div className="flex items-center gap-2 text-xs mt-2">
+                      <Icon name="Clock" size={14} className="text-accent" />
+                      <span className="text-accent font-semibold">Время зачисления: {selectedDepositMethod.processingTime}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Icon name="ListChecks" size={18} className="text-primary" />
+                    Алгоритм действий:
+                  </h4>
+                  <ol className="space-y-2">
+                    {selectedDepositMethod.steps.map((step, index) => (
+                      <li key={index} className="flex gap-3 items-start">
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="text-sm text-foreground pt-0.5">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </Card>
+
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="deposit-amount">Сумма пополнения (₽)</Label>
+                  <Input 
+                    id="deposit-amount"
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="Введите сумму"
+                    className="text-lg"
+                  />
+                </div>
+
+                <Button 
+                  className="w-full h-12 gradient-purple hover:opacity-90 transition-opacity text-lg font-bold"
+                  onClick={handleDeposit}
+                  disabled={!depositAmount || parseFloat(depositAmount) <= 0}
+                >
+                  <Icon name="CheckCircle" size={20} className="mr-2" />
+                  Подтвердить пополнение
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
